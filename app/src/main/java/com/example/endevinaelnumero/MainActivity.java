@@ -1,27 +1,36 @@
 package com.example.endevinaelnumero;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
+
     public static int intentos = 0;
     public int randomNumber;
     public static String nombre;
-    public static ArrayList<String> listaRecords = new ArrayList<String>();
+    private static final int REQUEST_IMAGE_CAPTURE = 1 ;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,9 +71,9 @@ public class MainActivity extends AppCompatActivity {
                                     toast.show();
                                 }else {
                                     Intent intent = new Intent(getApplicationContext(), MainActivity2.class);
-                                    String puntuacion = nombre + " " + intentosFinales;
-                                    listaRecords.add(puntuacion);
-                                    intent.putExtra("LISTA", listaRecords);
+                                    intent.putExtra("INTENTOS", intentosFinales);
+                                    intent.putExtra("NOMBRE",nombre);
+                                    dispatchTakePictureIntent();
                                     startActivity(intent);
                                     dialog.dismiss();
                                 }
@@ -98,5 +107,44 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
+    }
+    private void dispatchTakePictureIntent() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        // Ensure that there's a camera activity to handle the intent
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = getFile();
+            } catch (IOException ex) {
+                // Error occurred while creating the File
+                ex.printStackTrace();
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                Uri photoURI = FileProvider.getUriForFile(this,
+                        "com.example.android.fileprovider",
+                        photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            }
+        }
+    }
+    protected File getFile() throws IOException {
+        File path = getApplicationContext().getExternalFilesDir(
+                Environment.DIRECTORY_PICTURES);
+        File foto = new File(path, "imatge.jpg");
+        return foto;
+    }
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        final ImageView imageView = findViewById(R.id.imageView);
+        try{
+            Uri fileUri = Uri.fromFile(getFile());
+            imageView.setImageURI(fileUri);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
     }
 }
